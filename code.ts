@@ -1,19 +1,32 @@
+/**
+ * GE-DESIGN Audit Tool
+ * Scans Figma documents to extract design debt, component usage, and quality metrics.
+ */
+
 figma.showUI(__html__, { width: 450, height: 600 });
 
+/**
+ * Sends current file metadata to the plugin UI.
+ */
 async function sendFileInfo() {
   const fileKey = figma.fileKey;
-  
   figma.ui.postMessage({ 
     type: 'FILE_INFO', 
     payload: { 
       name: figma.root.name, 
       fileKey: fileKey || null,
+      pageCount: figma.root.children.length 
     } 
   });
 }
 
 setTimeout(sendFileInfo, 500);
 
+/**
+ * Recursively finds the PageNode parent of any given node.
+ * @param node - The node to start the search from.
+ * @returns The parent PageNode or null if not found.
+ */
 function getParentPage(node: BaseNode): PageNode | null {
   if (node.type === "PAGE") return node as PageNode;
   let parent = node.parent;
@@ -24,22 +37,33 @@ function getParentPage(node: BaseNode): PageNode | null {
   return parent as PageNode | null;
 }
 
+/**
+ * Executes the full document audit.
+ * Processes annotations, official component instances, and detached layers.
+ * @param manualKey - Optional file key if API detection fails.
+ */
 async function runAudit(manualKey?: string) {
   const fileKey = manualKey || figma.fileKey;
 
   if (!fileKey || fileKey === "null") {
-    figma.notify("⚠️ Erreur : ID du fichier manquant.");
+    figma.notify("⚠️ Error: Missing File Key.");
     return;
   }
 
-  figma.notify("🚀 Scan du document entier en cours...");
+  figma.notify("🔍 Analyzing " + figma.root.children.length + " pages...");
   await figma.loadAllPagesAsync();
 
   const report = {
     documentName: figma.root.name,
     fileKey: fileKey,
     timestamp: new Date().toISOString(),
-    stats: { totalInstances: 0, totalDetachedSuspects: 0, officialUsageCount: 0 },
+    stats: { 
+      totalInstances: 0, 
+      totalDetachedSuspects: 0, 
+      officialUsageCount: 0,
+      pagesScanned: figma.root.children.length,
+      totalNodesChecked: 0
+    },
     componentUsage: [] as any[],
     detachedSuspects: [] as any[],
     annotatedNodeIds: [] as string[] 
@@ -49,17 +73,16 @@ async function runAudit(manualKey?: string) {
   const componentMap = new Map<string, any>();
   
   const allNodes = figma.root.findAll(n => true);
+  report.stats.totalNodesChecked = allNodes.length;
 
   for (const node of allNodes) {
     const parentPage = getParentPage(node);
-    const pageName = parentPage ? parentPage.name : "Inconnue";
+    const pageName = parentPage ? parentPage.name : "Unknown";
 
-    // Dette (Annotations)
     if ('annotations' in node && node.annotations && node.annotations.length > 0) {
       report.annotatedNodeIds.push(node.id);
     }
 
-    // Filtre structurel
     if (node.type !== "INSTANCE" && node.type !== "FRAME" && node.type !== "GROUP") continue;
 
     const nodeNameUpper = node.name.toUpperCase();
@@ -71,8 +94,6 @@ async function runAudit(manualKey?: string) {
         let fName = mainComp.name;
         let fId = mainComp.id;
         
-        // --- CORRECTION SYNTAXE ICI ---
-        // On remplace le ?. par une vérification && classique
         if (mainComp.parent && mainComp.parent.type === "COMPONENT_SET") {
           fName = mainComp.parent.name;
           fId = mainComp.parent.id;
@@ -114,7 +135,6 @@ async function runAudit(manualKey?: string) {
     }
   }
 
-  // Utilisation de Object.assign au lieu du spread operator pour les objets
   report.componentUsage = Array.from(componentMap.values())
     .map(c => {
       return Object.assign({}, c, { pages: Array.from(c.pages) });
@@ -124,6 +144,9 @@ async function runAudit(manualKey?: string) {
   figma.ui.postMessage({ type: 'AUDIT_COMPLETE', payload: report });
 }
 
+/**
+ * Plugin message listener.
+ */
 figma.ui.onmessage = async (msg) => {
   if (msg.type === 'START_AUDIT') await runAudit(msg.manualKey);
   if (msg.type === 'REFRESH') sendFileInfo();
