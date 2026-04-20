@@ -1,7 +1,3 @@
-Here is a clean, professional **English version** of the `README.md` for your Git repository.
-
----
-
 # GE-DESIGN Audit Plugin
 
 The **GE-DESIGN Audit Plugin** is an internal **Design Ops** tool developed to monitor the health, quality, and adoption of the **GE-DESIGN** system. It scans entire Figma documents to extract analytical data and centralizes it into a local dashboard (Cockpit).
