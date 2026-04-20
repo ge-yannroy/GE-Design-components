@@ -1,0 +1,21 @@
+{
+  "name": "GE-Design-components",
+  "id": "1623658225806243938",
+  "api": "1.0.0",
+  "main": "code.js",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "documentAccess": "dynamic-page",
+  "editorType": [
+    "figma"
+  ],
+  "ui": "ui.html",
+  "networkAccess": {
+    "allowedDomains": [
+      "none"
+    ],
+    "devAllowedDomains": [
+      "http://localhost:5000"
+    ]
+  }
+}
