@@ -1,34 +1,26 @@
 /**
- * GE-DESIGN Audit Tool
- * Scans Figma documents to extract design debt, component usage, and quality metrics.
+ * GE-Design-component Audit Plugin (Legacy Version)
+ * Provides interactive audit capabilities within the Figma UI,
+ * including component usage tracking, debt detection, and node focusing.
  */
 
-figma.showUI(__html__, { width: 450, height: 600 });
+figma.showUI(__html__, { width: 500, height: 600 });
 
 /**
- * Sends current file metadata to the plugin UI.
+ * Retrieves the unique identifier for the current Figma file.
+ * @returns {Promise<string>} The Figma file key.
  */
-async function sendFileInfo() {
-  const fileKey = figma.fileKey;
-  figma.ui.postMessage({ 
-    type: 'FILE_INFO', 
-    payload: { 
-      name: figma.root.name, 
-      fileKey: fileKey || null,
-      pageCount: figma.root.children.length 
-    } 
-  });
+async function getFileKey(): Promise<string> {
+  if (figma.fileKey) return figma.fileKey;
+  return "NbOobcSvPaIDG7i1xXg0Nc";
 }
 
-setTimeout(sendFileInfo, 500);
-
 /**
- * Recursively finds the PageNode parent of any given node.
- * @param node - The node to start the search from.
- * @returns The parent PageNode or null if not found.
+ * Traverses the node tree upwards to find the parent PageNode.
+ * @param {BaseNode} node - The node to start the search from.
+ * @returns {PageNode | null} The parent page or null if not found.
  */
 function getParentPage(node: BaseNode): PageNode | null {
-  if (node.type === "PAGE") return node as PageNode;
   let parent = node.parent;
   while (parent && parent.type !== "PAGE") {
     if (parent.type === "DOCUMENT") return null;
@@ -38,31 +30,22 @@ function getParentPage(node: BaseNode): PageNode | null {
 }
 
 /**
- * Executes the full document audit.
- * Processes annotations, official component instances, and detached layers.
- * @param manualKey - Optional file key if API detection fails.
+ * Main audit function. 
+ * Scans the current page for annotations, official component usage, and detached layers.
+ * Sends the compiled report to the UI.
  */
-async function runAudit(manualKey?: string) {
-  const fileKey = manualKey || figma.fileKey;
-
-  if (!fileKey || fileKey === "null") {
-    figma.notify("⚠️ Error: Missing File Key.");
-    return;
-  }
-
-  figma.notify("🔍 Analyzing " + figma.root.children.length + " pages...");
+async function runAudit() {
   await figma.loadAllPagesAsync();
+  const fileKey = await getFileKey();
 
   const report = {
     documentName: figma.root.name,
     fileKey: fileKey,
     timestamp: new Date().toISOString(),
-    stats: { 
-      totalInstances: 0, 
-      totalDetachedSuspects: 0, 
-      officialUsageCount: 0,
-      pagesScanned: figma.root.children.length,
-      totalNodesChecked: 0
+    stats: {
+      totalInstances: 0,
+      totalDetachedSuspects: 0,
+      officialUsageCount: 0
     },
     componentUsage: [] as any[],
     detachedSuspects: [] as any[],
@@ -71,41 +54,56 @@ async function runAudit(manualKey?: string) {
 
   const OFFICIAL_PREFIXES = ["GE_", "MD_", "OCSTAT_"];
   const componentMap = new Map<string, any>();
-  
-  const allNodes = figma.root.findAll(n => true);
-  report.stats.totalNodesChecked = allNodes.length;
+
+  // Full scan of the current page
+  const allNodes = figma.currentPage.findAll(n => true);
 
   for (const node of allNodes) {
     const parentPage = getParentPage(node);
-    const pageName = parentPage ? parentPage.name : "Unknown";
+    const pageName = parentPage ? parentPage.name : figma.currentPage.name;
 
+    // 1. Detection of Figma Annotations
     if ('annotations' in node && node.annotations && node.annotations.length > 0) {
       report.annotatedNodeIds.push(node.id);
     }
 
-    if (node.type !== "INSTANCE" && node.type !== "FRAME" && node.type !== "GROUP") continue;
+    // 2. Structural filtering
+    const isBIEligible = ["INSTANCE", "FRAME", "GROUP", "COMPONENT", "COMPONENT_SET"].includes(node.type);
+    if (!isBIEligible) continue;
+
+    if (node.type === "COMPONENT" || node.type === "COMPONENT_SET") continue;
 
     const nodeNameUpper = node.name.toUpperCase();
-    const hasOfficialPrefix = OFFICIAL_PREFIXES.some(p => nodeNameUpper.startsWith(p));
+    const hasOfficialPrefix = OFFICIAL_PREFIXES.some(prefix => nodeNameUpper.startsWith(prefix));
 
+    // 3. Official Component Usage Logic
     if (node.type === "INSTANCE") {
       const mainComp = await node.getMainComponentAsync();
       if (mainComp) {
-        let fName = mainComp.name;
-        let fId = mainComp.id;
-        
-        if (mainComp.parent && mainComp.parent.type === "COMPONENT_SET") {
-          fName = mainComp.parent.name;
-          fId = mainComp.parent.id;
+        let finalName = mainComp.name;
+        let finalId = mainComp.id;
+        const parent = mainComp.parent;
+
+        if (parent && parent.type === "COMPONENT_SET") {
+          finalName = parent.name;
+          finalId = parent.id;
         }
 
-        if (OFFICIAL_PREFIXES.some(p => fName.toUpperCase().startsWith(p))) {
+        const isOfficial = OFFICIAL_PREFIXES.some(prefix => finalName.toUpperCase().startsWith(prefix));
+        
+        if (isOfficial) {
           report.stats.totalInstances++;
           report.stats.officialUsageCount++;
-          if (!componentMap.has(fId)) {
-            componentMap.set(fId, { name: fName, count: 0, pages: new Set() });
+
+          if (!componentMap.has(finalId)) {
+            componentMap.set(finalId, {
+              name: finalName,
+              count: 0,
+              pages: new Set() 
+            });
           }
-          const data = componentMap.get(fId);
+
+          const data = componentMap.get(finalId);
           data.count++;
           data.pages.add(pageName);
         }
@@ -113,42 +111,67 @@ async function runAudit(manualKey?: string) {
       continue;
     }
 
+    // 4. Detached Layers Detection (Quality Audit)
     if ((node.type === "FRAME" || node.type === "GROUP") && hasOfficialPrefix) {
-      let isInside = false;
+      let isInsideLegitimateComponent = false;
       let pObj = node.parent;
       while (pObj) {
-        if (pObj.type === "INSTANCE" || pObj.type === "COMPONENT" || pObj.type === "COMPONENT_SET") { 
-          isInside = true; 
-          break; 
+        if (["INSTANCE", "COMPONENT", "COMPONENT_SET"].includes(pObj.type)) {
+          isInsideLegitimateComponent = true;
+          break;
         }
         pObj = pObj.parent;
       }
-      if (!isInside) {
+
+      if (!isInsideLegitimateComponent) {
         report.stats.totalDetachedSuspects++;
         report.detachedSuspects.push({
           id: node.id,
           name: node.name,
           page: pageName,
-          figmaLink: "https://www.figma.com/file/" + fileKey + "?node-id=" + node.id.replace(/:/g, '-')
+          figmaLink: `https://www.figma.com/file/${fileKey}?node-id=${node.id.replace(/:/g, '-')}`
         });
       }
     }
   }
 
+  // Final data preparation for the UI (Converting Sets to Arrays)
   report.componentUsage = Array.from(componentMap.values())
     .map(c => {
-      return Object.assign({}, c, { pages: Array.from(c.pages) });
+      return Object.assign({}, c, {
+        pages: Array.from(c.pages)
+      });
     })
     .sort((a, b) => b.count - a.count);
-    
+  
   figma.ui.postMessage({ type: 'AUDIT_COMPLETE', payload: report });
 }
 
 /**
- * Plugin message listener.
+ * Main message handler for UI communication.
  */
 figma.ui.onmessage = async (msg) => {
-  if (msg.type === 'START_AUDIT') await runAudit(msg.manualKey);
-  if (msg.type === 'REFRESH') sendFileInfo();
-  if (msg.type === 'NOTIFY') figma.notify(msg.message);
+  if (msg.type === 'START_AUDIT') await runAudit();
+
+  if (msg.type === 'FOCUS_NODE') {
+    try {
+      const node = await figma.getNodeByIdAsync(msg.id);
+      if (node && node.type !== 'DOCUMENT' && node.type !== 'PAGE') {
+        const targetPage = getParentPage(node);
+        
+        // Page switching if necessary
+        if (targetPage && figma.currentPage !== targetPage) {
+          figma.currentPage = targetPage;
+        }
+
+        // Delay to ensure the viewport is ready after page switch
+        setTimeout(() => {
+          figma.viewport.scrollAndZoomIntoView([node as SceneNode]);
+          figma.currentPage.selection = [node as SceneNode];
+        }, 50);
+      }
+    } catch (e) {
+      console.error("Focus error:", e);
+    }
+  }
 };
