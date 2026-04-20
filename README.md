@@ -18,7 +18,7 @@ This tool serves three primary governance objectives:
 * **Direct Export**: One-click JSON report transmission to a local API server (`localhost:5000`).
 * **Pre-flight Summary**: Displays key stats (annotations, detached layers, pages) within the UI before data submission.
 
-## 🛠 Installation & Setup
+## Installation & Setup
 
 ### Prerequisites
 * **Node.js** installed on the local machine.
@@ -47,7 +47,3 @@ This tool serves three primary governance objectives:
 * **Languages**: TypeScript, HTML, CSS (Vanilla)
 * **Communication**: Fetch API (JSON)
 * **Target**: ECMAScript 2017+
-
----
-
-*This project is part of the GE-DESIGN ecosystem for Design System governance.*
