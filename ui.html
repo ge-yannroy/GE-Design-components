@@ -90,7 +90,7 @@
           document.getElementById('fileKeyDisplay').innerText = detectedKey;
           document.getElementById('manualBox').style.display = 'none';
         } else {
-          document.getElementById('fileKeyDisplay').innerText = "❌ Missing (Draft)";
+          document.getElementById('fileKeyDisplay').innerText = "❌ Missing (Dev)";
           document.getElementById('manualBox').style.display = 'block';
         }
         document.getElementById('status').innerText = payload.pageCount + " pages detected.";
@@ -100,7 +100,12 @@
         currentReport = payload;
         
         document.getElementById('resultsArea').style.display = 'grid';
-        document.getElementById('resDebt').innerText = payload.annotatedNodeIds.length;
+        
+        // MODIFICATION ICI : On utilise annotationsData au lieu de annotatedNodeIds
+        const annotationsCount = payload.annotationsData ? payload.annotationsData.length : 0;
+        document.getElementById('resDebt').innerText = annotationsCount;
+        
+        // Le reste ne change pas
         document.getElementById('resDetached').innerText = payload.stats.totalDetachedSuspects;
         document.getElementById('resUsage').innerText = payload.stats.officialUsageCount;
         document.getElementById('resPages').innerText = payload.stats.pagesScanned;
@@ -108,6 +113,8 @@
         document.getElementById('sendBtn').style.display = 'block';
         document.getElementById('scanBtn').innerText = "Recalculate";
         document.getElementById('status').innerText = "Analysis complete. Ready to send.";
+        
+        console.log("UI Updated with", annotationsCount, "annotations.");
       }
     };
 
@@ -132,6 +139,7 @@
      */
     document.getElementById('sendBtn').onclick = async function() {
       document.getElementById('status').innerText = "Connecting to server...";
+      console.log("Rapport envoyé au serveur :", currentReport.annotationsData);
       try {
         const res = await fetch('http://localhost:5000/api/audit/save', {
           method: 'POST',
