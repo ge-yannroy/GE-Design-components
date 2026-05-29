@@ -1,162 +1,443 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-  <style>
-    body { font-family: 'Inter', sans-serif; padding: 15px; margin: 0; color: #333; font-size: 12px; background: #fff; }
-    
-    .card { background: #F5F5F5; border-radius: 8px; padding: 12px; margin-bottom: 12px; border: 1px solid #E6E6E6; }
-    .label { font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; margin-bottom: 4px; }
-    .value { font-family: monospace; color: #18A0FB; word-break: break-all; }
-    
-    .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; display: none; }
-    .stat-box { background: #fff; border: 1px solid #E6E6E6; padding: 10px; border-radius: 6px; text-align: center; }
-    .stat-num { font-size: 18px; font-weight: bold; display: block; color: #333; }
-    .stat-desc { font-size: 9px; color: #888; margin-top: 2px; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GE-Design Components</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20,400,0,0" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    .manual-box { border: 1px dashed #FF7043; padding: 10px; margin-top: 10px; border-radius: 6px; background: #FFF5F2; }
-    input { width: 100%; box-sizing: border-box; padding: 8px; margin-top: 5px; border: 1px solid #DDD; border-radius: 4px; }
-    
-    button { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 12px; font-size: 13px; }
-    .btn-blue { background: #18A0FB; color: white; }
-    .btn-green { background: #1BC47D; color: white; display: none; }
-    button:hover { opacity: 0.9; }
-    button:disabled { background: #CCC; cursor: not-allowed; }
+  body {
+    font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 12px;
+    color: #1A1A1A;
+    background: #FFFFFF;
+    overflow-x: hidden;
+  }
 
-    .status-bar { margin-top: 12px; text-align: center; color: #888; font-style: italic; font-size: 11px; }
-    .highlight-blue { color: #18A0FB; font-weight: bold; }
-  </style>
+  /* ── MATERIAL ICONS ── */
+  .mi {
+    font-family: 'Material Symbols Rounded';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 16px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  .mi-sm { font-size: 14px; }
+  .mi-xs { font-size: 12px; }
+
+  /* ── HEADER ── */
+  .header {
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid #E8E8E8;
+    background: #fff;
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-weight: 600;
+    font-size: 13px;
+    color: #1A1A1A;
+  }
+  .logo-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #185FA5;
+  }
+  .version {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    background: #F0F4FF;
+    color: #185FA5;
+    font-weight: 500;
+  }
+
+  /* ── CONTENT ── */
+  .content { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+
+  /* ── FILE CARD ── */
+  .file-card {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #E8E8E8;
+    background: #FAFAFA;
+  }
+  .file-card-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .file-icon {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    background: #E6F1FB;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #185FA5;
+  }
+  .file-icon .mi { font-size: 15px; }
+  .file-info { flex: 1; min-width: 0; }
+  .file-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1A1A1A;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .file-key {
+    font-size: 10px;
+    color: #888;
+    font-family: monospace;
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .file-key.missing { color: #E85555; }
+
+  /* ── MANUAL INPUT ── */
+  .manual-box {
+    padding: 10px;
+    border-radius: 7px;
+    background: #FFF8E7;
+    border: 1px solid #F5D87A;
+    display: none;
+  }
+  .manual-box.show { display: block; }
+  .manual-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #8B6914;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .manual-label .mi { font-size: 13px; }
+  .manual-input {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid #E0E0E0;
+    border-radius: 6px;
+    font-size: 11px;
+    font-family: monospace;
+    color: #1A1A1A;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.12s;
+  }
+  .manual-input:focus { border-color: #185FA5; }
+
+  /* ── STATS GRID ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    display: none;
+  }
+  .stats-grid.show { display: grid; }
+  .stat-box {
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #E8E8E8;
+    background: #fff;
+    text-align: center;
+  }
+  .stat-num {
+    font-size: 20px;
+    font-weight: 700;
+    color: #185FA5;
+    display: block;
+    line-height: 1.2;
+  }
+  .stat-label {
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #999;
+    margin-top: 3px;
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    width: 100%;
+    padding: 9px;
+    border: none;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    transition: all 0.15s;
+  }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .btn .mi { font-size: 15px; }
+
+  .btn-primary {
+    background: #185FA5;
+    color: #fff;
+  }
+  .btn-primary:hover:not(:disabled) { background: #0D4A8A; }
+  .btn-primary.loading { background: #4A90D9; }
+
+  .btn-success {
+    background: #3B6D11;
+    color: #fff;
+    display: none;
+  }
+  .btn-success.show { display: flex; }
+  .btn-success:hover:not(:disabled) { background: #2D5409; }
+  .btn-success.sending { background: #5A9A1E; }
+
+  /* ── STATUS ── */
+  .status-bar {
+    padding: 7px 10px;
+    border-radius: 7px;
+    background: #F5F5F5;
+    font-size: 11px;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+  }
+  .status-bar .mi { font-size: 14px; color: #999; flex-shrink: 0; }
+  .status-bar.scanning { background: #EEF5FF; color: #185FA5; }
+  .status-bar.scanning .mi { color: #185FA5; }
+  .status-bar.success { background: #EAF3DE; color: #3B6D11; }
+  .status-bar.success .mi { color: #3B6D11; }
+  .status-bar.error { background: #FFF0F0; color: #E85555; }
+  .status-bar.error .mi { color: #E85555; }
+
+  /* ── FOOTER ── */
+  .plugin-footer {
+    padding: 8px 14px;
+    text-align: center;
+    font-size: 10px;
+    color: #BBB;
+    border-top: 1px solid #F0F0F0;
+    margin-top: 4px;
+  }
+</style>
 </head>
 <body>
 
-  <div class="card">
-    <div class="label">Identified File</div>
-    <div id="fileName" style="font-weight: bold; margin-bottom: 8px; font-size: 13px;">Loading...</div>
-    
-    <div class="label">File Key (ID)</div>
-    <div id="fileKeyDisplay">Searching...</div>
-    
-    <div id="manualBox" class="manual-box" style="display: none;">
-      <div class="label" style="color: #FF7043">ID Not Found - Manual entry:</div>
-      <input type="text" id="manualInput" placeholder="Paste ID from URL here">
+<div class="header">
+  <div class="header-top">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      ge-components
+    </div>
+    <span class="version">Audit</span>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- Fichier détecté -->
+  <div class="file-card">
+    <div class="file-card-row">
+      <div class="file-icon">
+        <span class="mi">insert_drive_file</span>
+      </div>
+      <div class="file-info">
+        <div class="file-name" id="fileName">Chargement…</div>
+        <div class="file-key" id="fileKeyDisplay">Recherche en cours…</div>
+      </div>
     </div>
   </div>
 
-  <div id="resultsArea" class="results-grid">
+  <!-- Saisie manuelle si clé non détectée -->
+  <div class="manual-box" id="manualBox">
+    <div class="manual-label">
+      <span class="mi">warning</span>
+      ID non détecté — Saisie manuelle
+    </div>
+    <input
+      type="text"
+      id="manualInput"
+      class="manual-input"
+      placeholder="Coller l'ID depuis l'URL Figma"
+    />
+  </div>
+
+  <!-- Résultats de l'audit -->
+  <div class="stats-grid" id="resultsArea">
     <div class="stat-box">
-      <span id="resDebt" class="stat-num">0</span>
-      <span class="stat-desc">ANNOTATIONS</span>
+      <span class="stat-num" id="resDebt">—</span>
+      <div class="stat-label">Annotations</div>
     </div>
     <div class="stat-box">
-      <span id="resDetached" class="stat-num">0</span>
-      <span class="stat-desc">DETACHED</span>
+      <span class="stat-num" id="resDetached">—</span>
+      <div class="stat-label">Détachés</div>
     </div>
     <div class="stat-box">
-      <span id="resUsage" class="stat-num">0</span>
-      <span class="stat-desc">COMPONENTS</span>
+      <span class="stat-num" id="resUsage">—</span>
+      <div class="stat-label">Composants</div>
     </div>
     <div class="stat-box">
-      <span id="resPages" class="stat-num">0</span>
-      <span class="stat-desc">PAGES SCANNED</span>
+      <span class="stat-num" id="resPages">—</span>
+      <div class="stat-label">Pages scannées</div>
     </div>
   </div>
 
-  <button id="scanBtn" class="btn-blue">Start Full Analysis</button>
-  <button id="sendBtn" class="btn-green">Push to Cockpit</button>
-  
-  <div id="status" class="status-bar">Plugin ready</div>
+  <!-- Bouton lancer l'audit -->
+  <button class="btn btn-primary" id="scanBtn" onclick="startScan()">
+    <span class="mi">search</span>
+    <span id="scanLabel">Lancer l'analyse</span>
+  </button>
 
-  <script>
-    /**
-     * GE-DESIGN Plugin UI Logic
-     * Handles communication between Figma background thread and external audit server.
-     */
+  <!-- Bouton envoyer au serveur -->
+  <button class="btn btn-success" id="sendBtn" onclick="sendReport()">
+    <span class="mi">cloud_upload</span>
+    <span id="sendLabel">Envoyer au Cockpit</span>
+  </button>
 
-    let currentReport = null;
-    let detectedKey = null;
+  <!-- Barre de statut -->
+  <div class="status-bar" id="statusBar">
+    <span class="mi">info</span>
+    <span id="statusText">Plugin prêt</span>
+  </div>
 
-    /**
-     * Global message listener for events triggered from code.ts
-     */
-    window.onmessage = (event) => {
-      const message = event.data.pluginMessage;
-      const type = message.type;
-      const payload = message.payload;
+</div>
 
-      if (type === 'FILE_INFO') {
-        document.getElementById('fileName').innerText = payload.name;
-        detectedKey = payload.fileKey;
+<div class="plugin-footer">GE-DESIGN · Audit Tool</div>
 
-        if (detectedKey) {
-          document.getElementById('fileKeyDisplay').innerText = detectedKey;
-          document.getElementById('manualBox').style.display = 'none';
-        } else {
-          document.getElementById('fileKeyDisplay').innerText = "❌ Missing (Dev)";
-          document.getElementById('manualBox').style.display = 'block';
-        }
-        document.getElementById('status').innerText = payload.pageCount + " pages detected.";
+<script>
+  var currentReport = null;
+  var detectedKey = null;
+
+  function setStatus(text, type) {
+    var bar = document.getElementById('statusBar');
+    var icons = { scanning: 'sync', success: 'check_circle', error: 'error', info: 'info' };
+    bar.className = 'status-bar' + (type ? ' ' + type : '');
+    bar.innerHTML = '<span class="mi">' + (icons[type] || 'info') + '</span><span>' + text + '</span>';
+  }
+
+  window.onmessage = function(event) {
+    var message = event.data.pluginMessage;
+    var type    = message.type;
+    var payload = message.payload;
+
+    if (type === 'FILE_INFO') {
+      document.getElementById('fileName').textContent = payload.name;
+      detectedKey = payload.fileKey;
+
+      var keyEl = document.getElementById('fileKeyDisplay');
+      if (detectedKey) {
+        keyEl.textContent = detectedKey;
+        keyEl.className = 'file-key';
+        document.getElementById('manualBox').classList.remove('show');
+      } else {
+        keyEl.textContent = '❌ Non détecté';
+        keyEl.className = 'file-key missing';
+        document.getElementById('manualBox').classList.add('show');
       }
+      setStatus(payload.pageCount + ' pages détectées', 'info');
+    }
 
-      if (type === 'AUDIT_COMPLETE') {
-        currentReport = payload;
-        
-        document.getElementById('resultsArea').style.display = 'grid';
-        
-        // MODIFICATION ICI : On utilise annotationsData au lieu de annotatedNodeIds
-        const annotationsCount = payload.annotationsData ? payload.annotationsData.length : 0;
-        document.getElementById('resDebt').innerText = annotationsCount;
-        
-        // Le reste ne change pas
-        document.getElementById('resDetached').innerText = payload.stats.totalDetachedSuspects;
-        document.getElementById('resUsage').innerText = payload.stats.officialUsageCount;
-        document.getElementById('resPages').innerText = payload.stats.pagesScanned;
+    if (type === 'AUDIT_COMPLETE') {
+      currentReport = payload;
 
-        document.getElementById('sendBtn').style.display = 'block';
-        document.getElementById('scanBtn').innerText = "Recalculate";
-        document.getElementById('status').innerText = "Analysis complete. Ready to send.";
-        
-        console.log("UI Updated with", annotationsCount, "annotations.");
+      var annotationsCount = payload.annotationsData ? payload.annotationsData.length : 0;
+      document.getElementById('resDebt').textContent     = annotationsCount;
+      document.getElementById('resDetached').textContent = payload.stats.totalDetachedSuspects;
+      document.getElementById('resUsage').textContent    = payload.stats.officialUsageCount;
+      document.getElementById('resPages').textContent    = payload.stats.pagesScanned;
+
+      document.getElementById('resultsArea').classList.add('show');
+      document.getElementById('sendBtn').classList.add('show');
+
+      var scanBtn = document.getElementById('scanBtn');
+      scanBtn.classList.remove('loading');
+      scanBtn.disabled = false;
+      document.getElementById('scanLabel').textContent = 'Recalculer';
+
+      setStatus('Analyse terminée — prêt à envoyer', 'success');
+    }
+  };
+
+  function startScan() {
+    var manualKey = document.getElementById('manualInput').value.trim();
+    var finalKey  = detectedKey || manualKey;
+
+    if (!finalKey) {
+      setStatus('ID de fichier requis pour l\'audit', 'error');
+      return;
+    }
+
+    var scanBtn = document.getElementById('scanBtn');
+    scanBtn.classList.add('loading');
+    scanBtn.disabled = true;
+    document.getElementById('scanLabel').textContent = 'Analyse en cours…';
+    setStatus('Scan des calques en cours…', 'scanning');
+
+    parent.postMessage({
+      pluginMessage: { type: 'START_AUDIT', manualKey: finalKey }
+    }, '*');
+  }
+
+  function sendReport() {
+    var sendBtn = document.getElementById('sendBtn');
+    sendBtn.classList.add('sending');
+    sendBtn.disabled = true;
+    document.getElementById('sendLabel').textContent = 'Envoi en cours…';
+    setStatus('Connexion au serveur…', 'scanning');
+
+    fetch('http://localhost:5000/api/audit/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(currentReport)
+    })
+    .then(function(res) {
+      if (res.ok) {
+        setStatus('Rapport archivé avec succès', 'success');
+        document.getElementById('sendLabel').textContent = '✓ Envoyé';
+        parent.postMessage({
+          pluginMessage: { type: 'NOTIFY', message: 'Audit envoyé au Cockpit !' }
+        }, '*');
+      } else {
+        setStatus('Erreur serveur (' + res.status + ')', 'error');
+        resetSendBtn();
       }
-    };
+    })
+    .catch(function() {
+      setStatus('Serveur local inaccessible', 'error');
+      resetSendBtn();
+    });
+  }
 
-    /**
-     * Initiates the document scan via the plugin backend.
-     */
-    document.getElementById('scanBtn').onclick = function() {
-      const manualKey = document.getElementById('manualInput').value.trim();
-      const finalKey = detectedKey || manualKey;
-
-      if (!finalKey) {
-        alert("File ID is required to perform the audit.");
-        return;
-      }
-
-      document.getElementById('status').innerHTML = "Scanning layers... <span class='highlight-blue'>Please wait</span>";
-      parent.postMessage({ pluginMessage: { type: 'START_AUDIT', manualKey: finalKey } }, '*');
-    };
-
-    /**
-     * Sends the generated report to the local audit server.
-     */
-    document.getElementById('sendBtn').onclick = async function() {
-      document.getElementById('status').innerText = "Connecting to server...";
-      console.log("Rapport envoyé au serveur :", currentReport.annotationsData);
-      try {
-        const res = await fetch('http://localhost:5000/api/audit/save', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(currentReport)
-        });
-        
-        if (res.ok) {
-          document.getElementById('status').innerHTML = "✅ <span style='color: #1BC47D'>Report successfully archived!</span>";
-          parent.postMessage({ pluginMessage: { type: 'NOTIFY', message: 'Audit sent to Cockpit!' } }, '*');
-        } else {
-          document.getElementById('status').innerText = "❌ Server error (" + res.status + ")";
-        }
-      } catch (e) {
-        document.getElementById('status').innerText = "❌ Error: Local server unreachable.";
-      }
-    };
-  </script>
+  function resetSendBtn() {
+    var sendBtn = document.getElementById('sendBtn');
+    sendBtn.classList.remove('sending');
+    sendBtn.disabled = false;
+    document.getElementById('sendLabel').textContent = 'Envoyer au Cockpit';
+  }
+</script>
 </body>
 </html>
