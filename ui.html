@@ -16,7 +16,6 @@
     overflow-x: hidden;
   }
 
-  /* ── MATERIAL ICONS ── */
   .mi {
     font-family: 'Material Symbols Rounded';
     font-weight: normal;
@@ -69,7 +68,12 @@
   }
 
   /* ── CONTENT ── */
-  .content { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .content {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
 
   /* ── FILE CARD ── */
   .file-card {
@@ -114,47 +118,43 @@
   }
   .file-key.missing { color: #E85555; }
 
-  /* ── MANUAL INPUT ── */
-  .manual-box {
-    padding: 10px;
-    border-radius: 7px;
-    background: #FFF8E7;
-    border: 1px solid #F5D87A;
-    display: none;
-  }
-  .manual-box.show { display: block; }
-  .manual-label {
+  /* ── FILE SELECT ── */
+  .file-select { display: flex; flex-direction: column; gap: 5px; }
+  .select-label {
     font-size: 10px;
     font-weight: 600;
-    color: #8B6914;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-bottom: 6px;
+    letter-spacing: 0.07em;
+    color: #999;
     display: flex;
     align-items: center;
     gap: 5px;
   }
-  .manual-label .mi { font-size: 13px; }
-  .manual-input {
+  .select-label .mi { font-size: 13px; }
+  .file-dropdown {
     width: 100%;
-    padding: 7px 10px;
+    padding: 7px 28px 7px 10px;
     border: 1px solid #E0E0E0;
     border-radius: 6px;
-    font-size: 11px;
-    font-family: monospace;
+    font-size: 12px;
+    font-family: inherit;
     color: #1A1A1A;
     background: #fff;
+    cursor: pointer;
     outline: none;
     transition: border-color 0.12s;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
   }
-  .manual-input:focus { border-color: #185FA5; }
+  .file-dropdown:focus { border-color: #185FA5; }
 
   /* ── STATS GRID ── */
   .stats-grid {
-    display: grid;
+    display: none;
     grid-template-columns: 1fr 1fr;
     gap: 6px;
-    display: none;
   }
   .stats-grid.show { display: grid; }
   .stat-box {
@@ -198,18 +198,11 @@
   .btn:disabled { opacity: 0.5; cursor: default; }
   .btn .mi { font-size: 15px; }
 
-  .btn-primary {
-    background: #185FA5;
-    color: #fff;
-  }
+  .btn-primary { background: #185FA5; color: #fff; }
   .btn-primary:hover:not(:disabled) { background: #0D4A8A; }
   .btn-primary.loading { background: #4A90D9; }
 
-  .btn-success {
-    background: #3B6D11;
-    color: #fff;
-    display: none;
-  }
+  .btn-success { background: #3B6D11; color: #fff; display: none; }
   .btn-success.show { display: flex; }
   .btn-success:hover:not(:disabled) { background: #2D5409; }
   .btn-success.sending { background: #5A9A1E; }
@@ -259,7 +252,7 @@
 
 <div class="content">
 
-  <!-- Fichier détecté -->
+  <!-- Fichier détecté automatiquement -->
   <div class="file-card">
     <div class="file-card-row">
       <div class="file-icon">
@@ -272,18 +265,19 @@
     </div>
   </div>
 
-  <!-- Saisie manuelle si clé non détectée -->
-  <div class="manual-box" id="manualBox">
-    <div class="manual-label">
-      <span class="mi">warning</span>
-      ID non détecté — Saisie manuelle
+  <!-- Sélecteur de fichier -->
+  <div class="file-select">
+    <div class="select-label">
+      <span class="mi mi-xs">folder_open</span>
+      Fichier à auditer
     </div>
-    <input
-      type="text"
-      id="manualInput"
-      class="manual-input"
-      placeholder="Coller l'ID depuis l'URL Figma"
-    />
+    <select id="fileSelect" class="file-dropdown" onchange="onFileSelect(this.value)">
+      <option value="">— Choisir un fichier —</option>
+      <option value="9a2PSbFEUUXpiT8yKLjwWf">Charte graphique</option>
+      <option value="GIZQNzPCllTJMl1UoQS5tD">SuisseVote</option>
+      <option value="NbOobcSvPaIDG7i1xXg0Nc">Skeleton</option>
+      <option value="yGaZ9hfNb1uoD7n9ZHKttc">Modèles de pages</option>
+    </select>
   </div>
 
   <!-- Résultats de l'audit -->
@@ -330,13 +324,35 @@
 
 <script>
   var currentReport = null;
-  var detectedKey = null;
+  var detectedKey   = null;
+  var selectedKey   = null;
 
   function setStatus(text, type) {
     var bar = document.getElementById('statusBar');
     var icons = { scanning: 'sync', success: 'check_circle', error: 'error', info: 'info' };
     bar.className = 'status-bar' + (type ? ' ' + type : '');
     bar.innerHTML = '<span class="mi">' + (icons[type] || 'info') + '</span><span>' + text + '</span>';
+  }
+
+  // Pré-sélectionner le dropdown si la clé auto-détectée correspond à un fichier connu
+  function preselectDropdown(key) {
+    var select = document.getElementById('fileSelect');
+    for (var i = 0; i < select.options.length; i++) {
+      if (select.options[i].value === key) {
+        select.selectedIndex = i;
+        selectedKey = key;
+        break;
+      }
+    }
+  }
+
+  function onFileSelect(value) {
+    selectedKey = value || null;
+    if (selectedKey) {
+      var keyEl = document.getElementById('fileKeyDisplay');
+      keyEl.textContent = selectedKey;
+      keyEl.className = 'file-key';
+    }
   }
 
   window.onmessage = function(event) {
@@ -352,11 +368,10 @@
       if (detectedKey) {
         keyEl.textContent = detectedKey;
         keyEl.className = 'file-key';
-        document.getElementById('manualBox').classList.remove('show');
+        preselectDropdown(detectedKey);
       } else {
-        keyEl.textContent = '❌ Non détecté';
+        keyEl.textContent = '❌ Non détecté — sélectionner ci-dessous';
         keyEl.className = 'file-key missing';
-        document.getElementById('manualBox').classList.add('show');
       }
       setStatus(payload.pageCount + ' pages détectées', 'info');
     }
@@ -383,11 +398,10 @@
   };
 
   function startScan() {
-    var manualKey = document.getElementById('manualInput').value.trim();
-    var finalKey  = detectedKey || manualKey;
+    var finalKey = selectedKey || detectedKey;
 
     if (!finalKey) {
-      setStatus('ID de fichier requis pour l\'audit', 'error');
+      setStatus('Sélectionnez un fichier avant de lancer l\'audit', 'error');
       return;
     }
 
